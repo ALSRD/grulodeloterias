@@ -3,146 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrativo | GRULODE</title>
+    <title>Admin - Generador de Tokens GRULODE</title>
     <style>
-        :root {
-            --primary: #48bb78;
-            --dark: #121212;
-            --card: #1e1e1e;
-            --text: #ffffff;
-        }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: var(--dark);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background: var(--card);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            border: 1px solid #333;
-        }
-        h2 { color: var(--primary); margin-bottom: 1.5rem; }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #444;
-            background: #2d2d2d;
-            color: white;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: 0.3s;
-        }
-        button:hover { background: #38a169; transform: translateY(-2px); }
-        #adminContent { display: none; }
-        .token-box {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f7fafc;
-            color: #1a202c;
-            border-radius: 8px;
-            word-break: break-all;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            cursor: pointer;
-            border: 2px dashed var(--primary);
-        }
-        .copy-hint { font-size: 0.75rem; color: #a0aec0; margin-top: 8px; }
+        body { font-family: sans-serif; background: #1a202c; color: white; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #2d3748; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
+        h2 { color: #f6ad55; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: none; font-size: 16px; box-sizing: border-box; color: black; }
+        button { width: 100%; padding: 12px; background: #48bb78; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        #resultado { background: #1a202c; padding: 15px; margin-top: 20px; border-radius: 6px; border: 1px dashed #f6ad55; word-break: break-all; display: none; }
+        .copy-btn { background: #4299e1; margin-top: 10px; }
     </style>
 </head>
 <body>
-
-    <div id="loginSection" class="container">
-        <h2>🔒 Acceso Privado</h2>
-        <p>Ingresa la Llave Maestra para generar balance:</p>
-        <input type="password" id="passInput" placeholder="Contraseña de Admin">
-        <button onclick="login()">Entrar al Panel</button>
-    </div>
-
-    <div id="adminContent" class="container">
-        <h2>💰 Generador GRULODE</h2>
-        <p>Monto recibido en el Voucher:</p>
-        <input type="number" id="montoInput" placeholder="Ej: 1500" min="1">
-        <button onclick="crearToken()">Generar Código Madre</button>
-
-        <div id="resultArea" style="display: none;">
-            <p style="margin-top: 20px; color: var(--primary); font-weight: bold;">CÓDIGO GENERADO:</p>
-            <div id="tokenOutput" class="token-box" onclick="copiarAlPortapapeles()"></div>
-            <p class="copy-hint">(Haz clic en el código para copiarlo)</p>
-        </div>
+    <div class="card">
+        <h2>Panel Administrador</h2>
+        <p>Introduce el monto del depósito para generar el token:</p>
+        <input type="number" id="monto" placeholder="Ej: 1550">
+        <button onclick="generarToken()">GENERAR TOKEN MADRE</button>
         
-        <button onclick="cerrarSesion()" style="background: #e53e3e; margin-top: 30px; font-size: 0.8rem; padding: 8px;">Cerrar Sesión</button>
+        <div id="resultado">
+            <small style="color: #a0aec0;">Token para el cliente:</small>
+            <div id="tokenTexto" style="font-family: monospace; font-size: 18px; margin-top: 5px;"></div>
+            <button class="copy-btn" onclick="copiarToken()">Copiar Código</button>
+        </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN:
-        // Cambia 'admin123' por la contraseña que tú quieras
-        const CLAVE_SECRETA = "admin123"; 
-
-        function login() {
-            const pass = document.getElementById('passInput').value;
-            if(pass === CLAVE_SECRETA) {
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('adminContent').style.display = 'block';
-            } else {
-                alert("Contraseña incorrecta. Inténtalo de nuevo.");
-            }
+        function generarToken() {
+            const monto = document.getElementById('monto').value;
+            if (!monto || monto <= 0) return alert("Pon un monto válido");
+            const str = monto + ":GRULODE";
+            const hash = btoa(str);
+            const token = "G-" + hash;
+            document.getElementById('tokenTexto').innerText = token;
+            document.getElementById('resultado').style.display = 'block';
         }
-
-        function crearToken() {
-            const monto = document.getElementById('montoInput').value;
-            if(!monto || monto <= 0) {
-                alert("Por favor, ingresa un monto válido.");
-                return;
-            }
-
-            // Lógica del Código Madre (Base64)
-            // Estructura: monto:GRULODE
-            const rawString = monto + ":GRULODE";
-            const encoded = btoa(rawString);
-            const tokenFinal = "G-" + encoded;
-
-            document.getElementById('tokenOutput').innerText = tokenFinal;
-            document.getElementById('resultArea').style.display = 'block';
+        function copiarToken() {
+            const texto = document.getElementById('tokenTexto').innerText;
+            navigator.clipboard.writeText(texto);
+            alert("¡Token copiado! Ya puedes enviarlo por WhatsApp.");
         }
-
-        function copiarAlPortapapeles() {
-            const codigo = document.getElementById('tokenOutput').innerText;
-            navigator.clipboard.writeText(codigo).then(() => {
-                alert("¡Código copiado con éxito! Ya puedes enviarlo por WhatsApp.");
-            });
-        }
-
-        function cerrarSesion() {
-            location.reload();
-        }
-
-        // Permitir entrar con la tecla "Enter"
-        document.getElementById('passInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') login();
-        });
     </script>
 </body>
 </html>
