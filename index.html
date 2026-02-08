@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GRULODE | Sistema Código Madre</title>
+    <style>
+        :root { 
+            --dark: #1e272e; --accent: #3742fa; --gold: #ffa502; 
+            --green: #2ed573; --red: #ff4757; --bg: #f0f2f5;
+            --blue-grulode: #0984e3;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background: var(--bg); margin: 0; padding: 95px 10px 100px 10px; }
+
+        /* HEADER */
+        .app-header { position: fixed; top: 0; left: 0; width: 100%; height: 85px; background: linear-gradient(135deg, #1e272e, #353b48); color: white; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .timer-badge { background: rgba(0,0,0,0.4); padding: 5px 12px; border-radius: 15px; border: 1px solid #57606f; text-align: center; }
+        .timer-clock { font-family: monospace; font-weight: 800; color: var(--gold); font-size: 1rem; }
+
+        /* SIDEBAR */
+        .sidebar { position: fixed; top: 0; left: -100%; width: 280px; height: 100%; background: var(--dark); z-index: 2000; transition: 0.3s; padding-top: 20px; box-shadow: 5px 0 20px rgba(0,0,0,0.5); }
+        .sidebar.open { left: 0; }
+        .side-item { padding: 18px 25px; color: white; border-bottom: 1px solid #2d3436; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+
+        /* ACORDEÓN LOTERÍAS */
+        .group-btn { width: 100%; padding: 16px; margin-bottom: 8px; border: none; border-radius: 15px; font-weight: 800; color: white; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; font-size: 1rem; transition: 0.2s; }
+        .btn-grulode { background: var(--blue-grulode); box-shadow: 0 4px #0765ae; }
+        .btn-dom { background: #2f3542; box-shadow: 0 4px #1e242e; }
+        .btn-ext { background: #57606f; box-shadow: 0 4px #2f3542; }
+        .lot-container { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0 20px 0; animation: fadeIn 0.3s ease; }
+        .lot-container.active { display: grid; }
+
+        /* CARTAS Y BOTONES JUEGO */
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .game-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .type-btn { padding: 15px; border: 2px solid #dcdde1; border-radius: 12px; background: white; font-weight: 800; cursor: pointer; color: var(--dark); font-size: 0.85rem; box-shadow: 0 3px #dcdde1; transition: 0.2s; }
+        .type-btn.active { background: var(--dark); color: white; border-color: var(--dark); box-shadow: 0 4px 10px rgba(0,0,0,0.3); transform: scale(1.02); }
+        .input-modern, .select-modern { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #f1f2f6; font-size: 1.1rem; text-align: center; font-weight: bold; margin-bottom: 10px; outline: none; background: white; }
+        .btn-main { width: 100%; padding: 18px; border-radius: 50px; border: none; font-weight: 800; cursor: pointer; text-transform: uppercase; color: white; transition: 0.3s; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; padding: 20px; overflow-y: auto; }
+        .modal.active { display: block; }
+        .ticket-thermal { background: #fff; width: 100%; max-width: 300px; padding: 20px; margin: 20px auto; color: #000; font-family: 'Courier New', monospace; position: relative; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div onclick="UI.toggleMenu()" style="font-size:1.8rem; cursor:pointer">☰</div>
+        <div class="timer-badge">
+            <small style="display:block; font-size:0.6rem; font-weight:900">SISTEMA CÓDIGO MADRE</small>
+            <span class="timer-clock" id="clock">00:00:00</span>
+        </div>
+        <div style="text-align:right">
+            <small id="u-top-name" style="color:#a4b0be"></small><br>
+            <b id="u-bal" style="color:var(--green); font-size:1.2rem">RD$ 0</b>
+        </div>
+    </header>
+
+    <div id="sidebar" class="sidebar">
+        <div class="side-item" style="background:#2c3e50; font-size:1.1rem;"><b id="side-u-name">USUARIO</b></div>
+        <div class="side-item" onclick="UI.view('main')">🏠 Loterías y Juego</div>
+        <div class="side-item" onclick="UI.view('deposit')">💰 Recargar Balance</div>
+        <div class="side-item" onclick="UI.view('withdraw')">💸 Retirar Ganancias</div>
+        <div class="side-item" onclick="UI.view('moves')">🕒 Mis Jugadas</div>
+        <div class="side-item" style="color:var(--red); margin-top:30px" onclick="location.reload()">Cerrar Sesión</div>
+    </div>
+
+    <div id="view-main" class="view">
+        <button class="group-btn btn-grulode" onclick="UI.toggleLotGroup('grid-grulode')">Loterías GRULODE <span>▼</span></button>
+        <div id="grid-grulode" class="lot-container"></div>
+        <button class="group-btn btn-dom" onclick="UI.toggleLotGroup('grid-dom')">Loterías Dominicanas <span>▼</span></button>
+        <div id="grid-dom" class="lot-container"></div>
+        <button class="group-btn btn-ext" onclick="UI.toggleLotGroup('grid-ext')">Loterías Extranjeras <span>▼</span></button>
+        <div id="grid-ext" class="lot-container"></div>
+
+        <div class="card" id="play-box" style="margin-top:20px; border-top: 5px solid var(--accent);">
+            <h3 id="selected-lot-name" style="text-align:center; color:var(--accent); margin-top:0">Seleccione Lotería</h3>
+            <div class="game-type-grid">
+                <button class="type-btn active" id="btn-QUIN" onclick="Game.setMode('QUIN')">QUINIELA</button>
+                <button class="type-btn" id="btn-PALÉ" onclick="Game.setMode('PALÉ')">PALÉ</button>
+                <button class="type-btn" id="btn-SUPER" onclick="Game.setMode('SUPER')">SUPER</button>
+                <button class="type-btn" id="btn-TRIP" onclick="Game.setMode('TRIP')">TRIPLETA</button>
+            </div>
+            <div style="display:flex; gap:10px">
+                <input type="number" id="in-n1" class="input-modern" placeholder="00">
+                <input type="number" id="in-n2" class="input-modern hidden" placeholder="00">
+                <input type="number" id="in-n3" class="input-modern hidden" placeholder="00">
+            </div>
+            <input type="number" id="in-amt" class="input-modern" placeholder="Monto RD$">
+            <button class="btn-main" style="background:var(--accent); box-shadow: 0 5px #262dbd;" onclick="Game.addToCart()">AGREGAR JUGADA 🛒</button>
+            <div id="cart-area" class="hidden" style="margin-top:20px; border-top:1px dashed #ccc; padding-top:15px">
+                <div id="cart-list" style="font-size: 0.9rem;"></div>
+                <div style="display:flex; justify-content:space-between; margin:15px 0; font-weight:800">
+                    <span>TOTAL:</span> <span id="cart-total" style="color:var(--accent)">RD$ 0</span>
+                </div>
+                <button class="btn-main" style="background:var(--green); box-shadow: 0 5px #219d55;" onclick="Game.processTicket()">PROCESAR TICKET 🎫</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-deposit" class="view hidden">
+        <div class="card">
+            <h3>💰 Recargar Balance</h3>
+            <div style="background:#f1f2f6; padding:15px; border-radius:15px; font-size:0.85rem; line-height: 1.8; border-left: 5px solid var(--gold);">
+                <b style="color:var(--dark)">TITULAR: CÉSAR AUGUSTO SAVIÑÓN</b><br>
+                🏦 <b>BANCO POPULAR:</b> 807385729<br>
+                🏦 <b>BANRESERVAS:</b> 4272743984<br>
+                🏦 <b>BHD LEÓN:</b> 17071310013
+            </div><br>
+            
+            <input type="number" id="dep-val" class="input-modern" placeholder="Monto RD$">
+            <button class="btn-main" style="background:var(--green); box-shadow: 0 5px #219d55;" onclick="Wallet.sendRequest()">PEDIR CÓDIGO POR WA</button>
+            
+            <div id="token-box" style="margin-top:25px; background: #fdfaf0; padding: 20px; border-radius: 15px; border: 1px dashed var(--gold);">
+                <p style="text-align: center; font-weight: 800; color: var(--gold); margin-bottom: 12px; font-size: 0.9rem;">PEGAR TOKEN DE ACTIVACIÓN</p>
+                <input type="text" id="dep-token" class="input-modern" placeholder="G-MTAwMDpHUlVMT0RE...">
+                <button class="btn-main" style="background:var(--gold); box-shadow: 0 5px #e67e22;" onclick="Wallet.verifyToken()">ACTIVAR BALANCE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-withdraw" class="view hidden">
+        <div class="card">
+            <h3>💸 Retirar Ganancias</h3>
+            <input type="number" id="wd-amt" class="input-modern" placeholder="Monto a Retirar">
+            <select id="wd-bank" class="select-modern">
+                <option value="">Seleccione Banco</option>
+                <option value="BANRESERVAS">Banreservas</option>
+                <option value="POPULAR">Banco Popular</option>
+                <option value="BHD LEON">BHD León</option>
+                <option value="OTRO">Otro / Mimecado</option>
+            </select>
+            <input type="text" id="wd-acc" class="input-modern" placeholder="Número de Cuenta">
+            <button class="btn-main" style="background:var(--red)" onclick="Wallet.withdraw()">SOLICITAR RETIRO</button>
+        </div>
+    </div>
+
+    <div id="view-moves" class="view hidden">
+        <div class="card"><h3>🕒 Mis Jugadas</h3><div id="moves-list"></div></div>
+    </div>
+
+    <div id="modal-auth" class="modal active">
+        <div style="background:white; border-radius:25px; padding:30px; max-width:400px; margin:50px auto; text-align:center">
+            <h2>GRULODE</h2>
+            <input type="text" id="auth-name" class="input-modern" placeholder="Nombre Completo">
+            <input type="number" id="auth-ced" class="input-modern" placeholder="Cédula">
+            <input type="tel" id="auth-tel" class="input-modern" placeholder="WhatsApp">
+            <button class="btn-main" style="background:var(--gold)" onclick="Auth.login()">ACCEDER</button>
+        </div>
+    </div>
+
+    <div id="modal-ticket" class="modal">
+        <div class="ticket-thermal">
+            <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:10px">
+                <h3 style="margin:0">GRULODE S.R.L.</h3>
+                <small id="tk-user-info"></small>
+            </div>
+            <div id="tk-items" style="font-size:0.75rem; margin-top:10px"></div>
+            <div style="text-align:right; border-top:2px solid #000; margin-top:10px; padding-top:5px">
+                <b>TOTAL: <span id="tk-total"></span></b>
+            </div>
+        </div>
+        <div style="text-align:center"><button class="btn-main" style="background:var(--gold); max-width:300px; margin-top:10px" onclick="UI.closeTicket()">CERRAR</button></div>
+    </div>
+
+    <script>
+        const DB = {
+            data: JSON.parse(localStorage.getItem('grulode_v6')) || { u:null, ced:null, tel:null, b:0, tx:[], view:'main' },
+            save() { localStorage.setItem('grulode_v6', JSON.stringify(this.data)); UI.updateUI(); }
+        };
+
+        const App = {
+            lot: null, mode: 'QUIN', cart: [],
+            grulode: [{n:'GRULODE 10AM', t:'10:00'}, {n:'GRULODE 1PM', t:'13:00'}, {n:'GRULODE 9PM', t:'21:00'}],
+            dom: [{n:'La Primera 12PM', t:'12:00'}, {n:'La Suerte 12:30PM', t:'12:30'}, {n:'Real', t:'12:55'}, {n:'LoteDom', t:'13:55'}, {n:'Nacional Tarde', t:'14:30'}, {n:'Loteka', t:'19:55'}, {n:'Leidsa', t:'20:55'}, {n:'Nacional Noche', t:'21:00'}].sort((a,b)=>a.n.localeCompare(b.n)),
+            ext: [{n:'Anguila 10AM', t:'10:00'}, {n:'Anguila 1PM', t:'13:00'}, {n:'Florida Tarde', t:'13:30'}, {n:'NY Tarde', t:'14:30'}, {n:'Anguila 6PM', t:'18:00'}, {n:'Anguila 9PM', t:'21:00'}, {n:'Florida Noche', t:'21:50'}, {n:'NY Noche', t:'22:30'}].sort((a,b)=>a.n.localeCompare(b.n))
+        };
+
+        const Auth = {
+            login() {
+                const n = document.getElementById('auth-name').value, c = document.getElementById('auth-ced').value, t = document.getElementById('auth-tel').value;
+                if(!n || !c || !t) return alert("Faltan datos");
+                DB.data.u = n; DB.data.ced = c; DB.data.tel = t; DB.save();
+                document.getElementById('modal-auth').classList.remove('active');
+            }
+        };
+
+        const Game = {
+            setMode(m) {
+                App.mode = m;
+                document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('btn-' + m).classList.add('active');
+                document.getElementById('in-n2').classList.toggle('hidden', m === 'QUIN');
+                document.getElementById('in-n3').classList.toggle('hidden', m !== 'TRIP');
+            },
+            selectLot(n) { 
+                App.lot = n; document.getElementById('selected-lot-name').innerText = n; 
+                UI.renderGrids(); document.querySelectorAll('.lot-container').forEach(c => c.classList.remove('active')); 
+            },
+            addToCart() {
+                const n1 = document.getElementById('in-n1').value, amt = document.getElementById('in-amt').value;
+                if(!App.lot || !n1 || !amt) return alert("Faltan datos");
+                const nums = [n1];
+                if(App.mode !== 'QUIN') nums.push(document.getElementById('in-n2').value);
+                if(App.mode === 'TRIP') nums.push(document.getElementById('in-n3').value);
+                App.cart.push({mode: App.mode, nums, amt: parseInt(amt)});
+                UI.renderCart();
+                document.getElementById('in-n1').value = ""; document.getElementById('in-n2').value = ""; document.getElementById('in-n3').value = "";
+            },
+            processTicket() {
+                const total = App.cart.reduce((a,b)=>a+b.amt,0);
+                if(DB.data.b < total) return alert("Saldo insuficiente");
+                const ticket = { id: "GR-"+Math.floor(Math.random()*999999), lot: App.lot, items: [...App.cart], total, date: new Date().toLocaleString() };
+                DB.data.b -= total; DB.data.tx.unshift(ticket); DB.save();
+                this.showTicket(ticket); App.cart = []; UI.renderCart();
+            },
+            showTicket(t) {
+                document.getElementById('tk-total').innerText = "RD$ " + t.total;
+                document.getElementById('tk-user-info').innerText = `${DB.data.u} | ${DB.data.ced}`;
+                document.getElementById('tk-items').innerHTML = t.items.map(i => `<div>${i.mode} [${i.nums.join('-')}] - RD$${i.amt}</div>`).join('');
+                document.getElementById('modal-ticket').classList.add('active');
+            }
+        };
+
+        const Wallet = {
+            sendRequest() {
+                const m = document.getElementById('dep-val').value;
+                if(!m || m < 50) return alert("Monto mínimo RD$50");
+                
+                // BLOQUEAR VISTA EN DEPOSIT PARA QUE NO SE MUEVA
+                DB.data.view = 'deposit'; 
+                DB.save();
+
+                const msg = `RECARGA GRULODE%0A👤 ${DB.data.u}%0A💳 CED: ${DB.data.ced}%0A💰 RD$${m}%0A%0A*Solicito mi CÓDIGO MADRE de validación.*`;
+                // Usamos _blank para mantener la ventana actual viva
+                window.open(`https://wa.me/18493182005?text=${msg}`, '_blank');
+            },
+            verifyToken() {
+                const tk = document.getElementById('dep-token').value.trim();
+                
+                // LÓGICA DE VALIDACIÓN CÓDIGO MADRE (Base64)
+                if(tk.startsWith("G-")) {
+                    try {
+                        // Extraemos la parte codificada después de "G-"
+                        const encodedPart = tk.split('G-')[1];
+                        const decoded = atob(encodedPart); // Decodifica: 1000:GRULODE_SECRET_X9
+                        const montoExtraido = parseInt(decoded.split(':')[0]); // Extrae el "1000"
+
+                        if(!isNaN(montoExtraido)) {
+                            DB.data.b += montoExtraido;
+                            DB.data.tx.unshift({lot: "RECARGA BALANCE", total: montoExtraido, date: new Date().toLocaleString(), paid: true});
+                            DB.data.view = 'main'; // Volver al inicio tras éxito
+                            DB.save();
+                            alert("¡ACTIVACIÓN EXITOSA! Se han cargado RD$" + montoExtraido);
+                            document.getElementById('dep-token').value = "";
+                            UI.view('main');
+                        } else {
+                            throw new Error();
+                        }
+                    } catch(e) {
+                        alert("ERROR: TOKEN CORRUPTO O INVÁLIDO");
+                    }
+                } else {
+                    alert("FORMATO DE TOKEN NO RECONOCIDO");
+                }
+            },
+            withdraw() {
+                const a = document.getElementById('wd-amt').value, b = document.getElementById('wd-bank').value, acc = document.getElementById('wd-acc').value;
+                if(!a || !b || !acc) return alert("Faltan datos");
+                window.open(`https://wa.me/18493182005?text=RETIRO GRULODE%0A👤 ${DB.data.u}%0A🏦 ${b}%0A🔢 ACC: ${acc}%0A💰 RD$${a}`, '_blank');
+            }
+        };
+
+        const UI = {
+            toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); },
+            toggleLotGroup(id) {
+                const c = document.getElementById(id);
+                const isOpen = c.classList.contains('active');
+                document.querySelectorAll('.lot-container').forEach(el => el.classList.remove('active'));
+                if(!isOpen) c.classList.add('active');
+            },
+            view(id) {
+                DB.data.view = id; DB.save();
+                document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+                document.getElementById('view-'+id).classList.remove('hidden');
+                if(document.getElementById('sidebar').classList.contains('open')) this.toggleMenu();
+                if(id==='moves') this.renderMoves();
+            },
+            renderGrids() {
+                const min = new Date().getHours()*60 + new Date().getMinutes();
+                const draw = (list, target) => {
+                    document.getElementById(target).innerHTML = list.map(l => {
+                        const [h, m] = l.t.split(':');
+                        const isClosed = min >= (parseInt(h)*60 + parseInt(m) - 5);
+                        return `<div class="lot-card ${isClosed?'closed':''} ${App.lot===l.n?'selected':''}" onclick="Game.selectLot('${l.n}')">
+                            <b>${l.n}</b><br><small>${l.t}</small><br>
+                            <span class="status-tag ${isClosed?'closed-tag':'open-tag'}">${isClosed?'🔒':'🛒'}</span>
+                        </div>`;
+                    }).join('');
+                };
+                draw(App.grulode, 'grid-grulode'); draw(App.dom, 'grid-dom'); draw(App.ext, 'grid-ext');
+            },
+            renderCart() {
+                const area = document.getElementById('cart-area'); area.classList.toggle('hidden', App.cart.length === 0);
+                document.getElementById('cart-list').innerHTML = App.cart.map(i => `<div>${i.mode}: ${i.nums.join('-')} - RD$${i.amt}</div>`).join('');
+                document.getElementById('cart-total').innerText = "RD$ " + App.cart.reduce((a,b)=>a+b.amt,0);
+            },
+            renderMoves() {
+                document.getElementById('moves-list').innerHTML = DB.data.tx.map((t) => `
+                    <div class="card" style="padding:15px">
+                        <b>${t.lot}</b> | RD$ ${t.total}<br><small>${t.date}</small>
+                    </div>`).join('');
+            },
+            closeTicket() { document.getElementById('modal-ticket').classList.remove('active'); },
+            updateUI() {
+                if(DB.data.u) {
+                    document.getElementById('u-top-name').innerText = DB.data.u;
+                    document.getElementById('side-u-name').innerText = DB.data.u.toUpperCase();
+                    document.getElementById('u-bal').innerText = "RD$ " + DB.data.b;
+                    document.getElementById('modal-auth').classList.remove('active');
+                }
+                document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+                document.getElementById('view-' + (DB.data.view || 'main')).classList.remove('hidden');
+            }
+        };
+
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); UI.renderGrids(); }, 1000);
+        window.onload = () => { UI.updateUI(); UI.renderGrids(); Game.setMode('QUIN'); };
+    </script>
+</body>
+</html>
